@@ -1,0 +1,22 @@
+# Decisão técnica: manter fora do Git dependências, builds e segredos locais.
+
+# Angular
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.angular/
+
+# PHP / Backend
+/backend/config/config.php
+/backend/vendor/
+/backend/storage/*.log
+
+# Base de dados
+*.sql.bak
+
+# Ambiente
+.env
+.env.local
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

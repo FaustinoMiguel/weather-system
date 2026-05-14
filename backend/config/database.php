@@ -1,0 +1,26 @@
+<?php
+// Decisão técnica: centralizar PDO evita duplicação e garante prepared statements em todo o backend.
+
+declare(strict_types=1);
+
+$configPath = __DIR__ . '/config.php';
+require_once file_exists($configPath) ? $configPath : __DIR__ . '/config.example.php';
+
+final class Database
+{
+    private static ?PDO $connection = null;
+
+    public static function connection(): PDO
+    {
+        if (self::$connection === null) {
+            $dsn = sprintf('mysql:host=%s;dbname=%s;charset=%s', DB_HOST, DB_NAME, DB_CHARSET);
+            self::$connection = new PDO($dsn, DB_USER, DB_PASS, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ]);
+        }
+
+        return self::$connection;
+    }
+}
