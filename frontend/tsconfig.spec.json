@@ -1,0 +1,14 @@
+{
+  "xComment": "Decisão técnica: ficheiro reservado para testes Angular quando o projecto evoluir.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/spec",
+    "types": [
+      "jasmine"
+    ]
+  },
+  "include": [
+    "src/**/*.spec.ts",
+    "src/**/*.d.ts"
+  ]
+}
