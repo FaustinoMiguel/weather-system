@@ -28,7 +28,17 @@ class SearchHistory {
             'SELECT * FROM search_history WHERE user_id = ? ORDER BY searched_at DESC LIMIT ?'
         );
         $stmt->execute([$userId, $limit]);
-        return $stmt->fetchAll();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // PDO devolve DECIMAL como string — forçar tipos numéricos para JSON correcto
+        return array_map(function (array $row): array {
+            $row['id']          = (int)   $row['id'];
+            $row['user_id']     = (int)   $row['user_id'];
+            $row['latitude']    = $row['latitude']    !== null ? (float) $row['latitude']    : null;
+            $row['longitude']   = $row['longitude']   !== null ? (float) $row['longitude']   : null;
+            $row['temperature'] = $row['temperature'] !== null ? (float) $row['temperature'] : null;
+            return $row;
+        }, $rows);
     }
 
     public function clearByUser(int $userId): void {

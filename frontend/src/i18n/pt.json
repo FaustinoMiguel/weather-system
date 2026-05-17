@@ -94,5 +94,17 @@
   "dashboard.searchResult": "Resultado da pesquisa",
   "dashboard.retryGps": "Tentar novamente",
   "dashboard.gpsPermissionDenied": "Permissão de localização negada. Podes pesquisar uma cidade manualmente.",
-  "dashboard.gpsApiError": "Não foi possível obter o tempo para a tua localização."
+  "dashboard.gpsApiError": "Não foi possível obter o tempo para a tua localização.",
+  "dashboard.headerSub": "Consulta as últimas actualizações meteorológicas",
+  "dashboard.searchPrompt": "Pesquisa uma cidade ou usa o GPS",
+  "dashboard.hourlyForecast": "Previsão Horária",
+  "dashboard.weeklyOverview": "Visão Semanal",
+  "dashboard.temperature": "Temperatura",
+  "dashboard.precipitation": "Precipitação",
+  "dashboard.todayHighlights": "Destaques de Hoje",
+  "dashboard.now": "Agora",
+  "favourites.seeAll": "Ver tudo",
+  "favourites.tap": "Toca para ver",
+  "nav.notifications": "Notificações",
+  "export.generating": "A gerar…"
 }

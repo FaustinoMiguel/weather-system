@@ -13,10 +13,18 @@ class FavouriteCity {
     }
 
     public function add(int $userId, string $cityName, string $countryCode, float $lat, float $lon): array {
+        // Verifica se já existe (para evitar erro de duplicate key)
+        $check = $this->db->prepare(
+            'SELECT id FROM favourite_cities WHERE user_id = ? AND city_name = ? LIMIT 1'
+        );
+        $check->execute([$userId, $cityName]);
+        if ($existing = $check->fetch()) {
+            return ['id' => (int)$existing['id'], 'city_name' => $cityName, 'country_code' => $countryCode];
+        }
+
         $stmt = $this->db->prepare(
-            'INSERT INTO favourite_cities (user_id, city_name, country_code, latitude, longitude) 
-             VALUES (?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE added_at = CURRENT_TIMESTAMP'
+            'INSERT INTO favourite_cities (user_id, city_name, country_code, latitude, longitude)
+             VALUES (?, ?, ?, ?, ?)'
         );
         $stmt->execute([$userId, $cityName, $countryCode, $lat, $lon]);
         return ['id' => (int)$this->db->lastInsertId(), 'city_name' => $cityName, 'country_code' => $countryCode];

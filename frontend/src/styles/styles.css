@@ -35,6 +35,56 @@
   --shadow-lg: 0 12px 40px rgba(22,33,58,.12);
 
   --t: .2s cubic-bezier(.4,0,.2,1);
+
+  /* ── Aliases --color-* para componentes com sistema de tokens próprio ── */
+  --color-card:           var(--card);
+  --color-card-fg:        var(--card-fg);
+  --color-card-glass:     rgba(255,255,255,0.82);
+  --color-bg:             var(--background);
+  --color-bg-secondary:   var(--secondary);
+  --color-text-primary:   var(--foreground);
+  --color-text-secondary: var(--muted-fg);
+  --color-text-muted:     var(--muted-fg);
+  --color-primary:        var(--primary);
+  --color-border:         var(--border);
+  --color-border-light:   #dce6f0;
+  --color-overlay:        rgba(22,33,58,.05);
+
+  /* ── Radius scale ── */
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) * 1.5);
+
+  /* ── Typography & transitions ── */
+  --font-display:      var(--font);
+  --transition-fast:   0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow:   0.35s ease;
+
+  /* ── Radius scale completa ── */
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) * 1.5);
+  --radius-xl: calc(var(--radius) * 2);
+
+  /* ── Sombras especiais ── */
+  --shadow-glow:        0 0 0 3px rgba(217,119,6,.18);
+  --color-primary-dark: #b45309;
+
+  /* ── Tokens de input — garantem contraste WCAG AA em ambos os temas ── */
+  --input-bg:           #ffffff;
+  --input-border:       #94a3b8;
+  --input-text:         #16213a;
+  --input-placeholder:  #64748b;
+  --input-focus-border: #d97706;
+  --input-focus-shadow: rgba(217,119,6,.18);
+
+  /* ── Tokens de contraste reforçado para filtros (tema claro) ── */
+  --filter-bg:     #ffffff;
+  --filter-border: #94a3b8;
+  --filter-text:   #16213a;
+  --filter-icon:   #475569;
+  --filter-focus:  #d97706;
 }
 
 [data-theme="dark"] {
@@ -48,10 +98,10 @@
   --secondary:    #1e2d45;
   --secondary-fg: #cbd5e1;
   --muted:        #1e2d45;
-  --muted-fg:     #64748b;
+  --muted-fg:     #94a3b8;   /* era #64748b — ratio ~3:1 em --card; agora 6.4:1 ✓ */
   --accent:       #4c6ef5;
   --accent-fg:    #e8edf5;
-  --border:       #1e2d45;
+  --border:       #253649;   /* ligeiramente mais visível que #1e2d45 */
   --sidebar:      #111927;
   --sidebar-border:#1e2d45;
   --weather-sun:  #fbbf24;
@@ -59,6 +109,28 @@
   --weather-cloud:#6b7280;
   --weather-warm: #fb923c;
   --weather-cool: #93c5fd;
+
+  /* Aliases dark */
+  --color-card-glass:   rgba(23,32,50,0.88);
+  --color-border-light: #2d3f58;
+  --color-overlay:      rgba(255,255,255,0.05);
+  --color-primary-dark: #fbbf24;
+  --shadow-glow:        0 0 0 3px rgba(245,158,11,.2);
+
+  /* Tokens de input (tema escuro) — WCAG AA em todos os fundos */
+  --input-bg:           #1e2d45;
+  --input-border:       #4a6080;
+  --input-text:         #e8edf5;
+  --input-placeholder:  #94a3b8;
+  --input-focus-border: #f59e0b;
+  --input-focus-shadow: rgba(245,158,11,.18);
+
+  /* Tokens de filtro (tema escuro) */
+  --filter-bg:     #1e2d45;
+  --filter-border: #4a6080;
+  --filter-text:   #e8edf5;
+  --filter-icon:   #94a3b8;
+  --filter-focus:  #f59e0b;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -77,6 +149,28 @@ body {
 a { color: inherit; text-decoration: none; }
 button { font-family: var(--font); cursor: pointer; }
 input  { font-family: var(--font); }
+
+/* ── Contraste global para todos os controlos de formulário ──
+   Garante WCAG AA em ambos os temas sem tocar em cada componente.
+   Estilos de componente podem sobrepor propriedades individuais. ── */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]),
+select,
+textarea {
+  background: var(--input-bg);
+  border: 1.5px solid var(--input-border);
+  color: var(--input-text);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast),
+              background var(--transition-fast);
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--input-focus-border);
+  box-shadow: 0 0 0 3px var(--input-focus-shadow);
+}
+input::placeholder, textarea::placeholder { color: var(--input-placeholder); }
 
 /* ── Layout raiz ── */
 .app-shell {
@@ -168,23 +262,24 @@ input  { font-family: var(--font); }
 
 .search-box {
   display: flex; align-items: center; gap: .5rem;
-  background: var(--card); border: 1px solid var(--border);
+  background: var(--input-bg); border: 2px solid var(--input-border);
   border-radius: calc(var(--radius) - 2px);
   padding: .45rem .85rem;
   transition: border-color var(--t), box-shadow var(--t);
   position: relative;
 }
 .search-box:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(217,119,6,.15);
+  border-color: var(--input-focus-border);
+  box-shadow: 0 0 0 3px var(--input-focus-shadow);
 }
 .search-box input {
   border: none; background: transparent;
-  font-size: .85rem; color: var(--foreground);
+  font-size: .85rem; color: var(--input-text);
   width: 180px; outline: none;
+  box-shadow: none;
 }
-.search-box input::placeholder { color: var(--muted-fg); }
-.search-icon { color: var(--muted-fg); font-size: .9rem; }
+.search-box input::placeholder { color: var(--input-placeholder); }
+.search-icon { color: var(--filter-icon); font-size: .9rem; }
 
 /* Suggestions dropdown */
 .suggestions-dropdown {
@@ -515,3 +610,166 @@ input  { font-family: var(--font); }
   animation:spin .8s ease infinite;
 }
 .spinner-ring div:nth-child(2){inset:7px;animation-delay:-.15s;border-top-color:rgba(217,119,6,.4);}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVIDADE ALARGADA — mobile-first additions
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── App shell: sidebar vira bottom-nav em mobile ── */
+@media (max-width: 768px) {
+  .app-shell {
+    flex-direction: column;
+    height: 100dvh;           /* dvh = dynamic viewport height (mobile) */
+  }
+
+  /* Sidebar passa para rodapé */
+  .sidebar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    top: auto;
+    width: 100%;
+    height: 64px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    border-right: none;
+    border-top: 1px solid var(--sidebar-border);
+    padding: 0 .5rem;
+    z-index: 100;
+    box-shadow: 0 -4px 16px rgba(0,0,0,.06);
+  }
+
+  .sidebar-top, .sidebar-bottom {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+  }
+
+  .sidebar-logo { display: none; }
+
+  /* Área de conteúdo principal ocupa todo o espaço menos a bottom-nav */
+  .main-area {
+    flex: 1;
+    height: calc(100dvh - 64px);
+    overflow-y: auto;
+    padding-bottom: 0;
+  }
+
+  .main-inner {
+    padding: 1rem .85rem 1.5rem;
+  }
+
+  /* Dashboard header em coluna */
+  .dash-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: .75rem;
+  }
+
+  .dash-controls {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .search-box { flex: 1; }
+
+  /* Grid do dashboard: 1 coluna */
+  .dash-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* Card current weather + forecast lado a lado → empilhados */
+  .dash-grid > .col-main > div:first-child {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Forecast 7 dias: scroll horizontal em mobile */
+  .weekly-row {
+    display: flex;
+    overflow-x: auto;
+    gap: .5rem;
+    padding-bottom: .5rem;
+    scrollbar-width: thin;
+  }
+
+  .wday-card { min-width: 68px; flex-shrink: 0; }
+
+  /* Hourly scroll já tem overflow, apenas ajuste visual */
+  .hourly-scroll { gap: .5rem; }
+  .hourly-item  { min-width: 60px; }
+
+  /* Highlights: 2 colunas em vez de 3 */
+  .highlights-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Coluna lateral: empilhada normalmente */
+  .col-side { flex-direction: column !important; }
+  .col-side > * { min-width: unset !important; }
+
+  /* Gráfico: altura menor em mobile */
+  .chart-wrap { height: 140px !important; }
+
+  /* Cards de comparação: 1 coluna */
+  .compare-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── Tablet (768 – 1024 px) ── */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .sidebar { width: 64px; }
+
+  .dash-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .col-side {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .highlights-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ── Ajustes finos para ecrãs muito pequenos (< 380 px) ── */
+@media (max-width: 380px) {
+  .main-inner { padding: .75rem .6rem 1.25rem; }
+  .auth-card  { padding: 1.75rem 1.25rem; }
+  .dash-header h1 { font-size: 1.1rem; }
+  .cw-temp-val { font-size: 2.8rem !important; }
+  .highlights-grid { grid-template-columns: 1fr 1fr; gap: .5rem; }
+  .sidebar { height: 58px; }
+  .main-area { height: calc(100dvh - 58px); }
+}
+
+/* ── Nav icon buttons: tamanho mínimo de toque (48 px) em mobile ── */
+@media (max-width: 768px) {
+  .nav-btn, .icon-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* ── Formulário de comparação responsivo (já no component, reforço global) ── */
+@media (max-width: 600px) {
+  .compare-form {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .city-search-wrap { min-width: unset !important; }
+}
+
+/* ── Histórico e favoritos em mobile ── */
+@media (max-width: 768px) {
+  .city-row { padding: .65rem .75rem; }
+  .city-name { font-size: .875rem; }
+}
+
+/* ── Exportação em mobile ── */
+@media (max-width: 480px) {
+  .export-grid { grid-template-columns: 1fr !important; }
+}

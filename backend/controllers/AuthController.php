@@ -58,7 +58,6 @@ class AuthController {
 
     public function logout(): void {
         // Com JWT stateless, o logout é feito no cliente removendo o token.
-        // Para revogar tokens server-side seria necessária uma blacklist (fora do âmbito).
         Response::ok(null, 'Sessão terminada.');
     }
 
@@ -83,14 +82,17 @@ class AuthController {
 
         // Resposta genérica para não revelar se o email existe
         if (!$user) {
-            Response::ok(null, 'Se o email existir, receberás as instruções em breve.');
+            Response::ok(null, 'Se o email existir, receberás um link de recuperação em breve.');
         }
 
         $resetModel = new PasswordReset();
         $token      = $resetModel->create((int)$user['id']);
-        Mailer::sendPasswordReset($email, $user['name'], $token);
 
-        Response::ok(null, 'Se o email existir, receberás as instruções em breve.');
+        // Passa o idioma do utilizador para o Mailer enviar o email no idioma correcto
+        $lang = $user['language'] ?? 'pt';
+        Mailer::sendPasswordReset($email, $user['name'], $token, $lang);
+
+        Response::ok(null, 'Se o email existir, receberás um link de recuperação em breve.');
     }
 
     public function resetPassword(): void {
@@ -105,10 +107,16 @@ class AuthController {
         $resetModel = new PasswordReset();
         $reset      = $resetModel->findValid($token);
         if (!$reset) {
-            Response::error('Token inválido ou expirado.', 422);
+            Response::error('Link inválido ou expirado. Solicita um novo.', 422);
         }
 
         $userModel = new User();
+
+        $currentUser = $userModel->findByIdWithPassword((int)$reset['user_id']);
+        if ($currentUser && $userModel->verifyPassword($password, $currentUser['password'])) {
+            Response::error('A nova senha não pode ser igual à senha atual.', 422);
+        }
+
         $userModel->updatePassword((int)$reset['user_id'], $password);
         $resetModel->markUsed((int)$reset['id']);
 

@@ -33,16 +33,26 @@ require_once __DIR__ . '/controllers/ExportController.php';
 require_once __DIR__ . '/routes/api.php';
 
 // Headers CORS — ajustar origem em produção
-header('Content-Type: application/json; charset=UTF-8');
 header('Access-Control-Allow-Origin: http://localhost:4200');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
+// FIX: expõe Content-Disposition para que o Angular consiga ler o nome do ficheiro
+header('Access-Control-Expose-Headers: Content-Disposition, Content-Type');
 
 // Responde ao preflight OPTIONS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
 }
+
+// FIX: NÃO definir Content-Type: application/json globalmente aqui.
+// As rotas de exportação (/export/csv e /export/pdf) precisam de definir
+// o seu próprio Content-Type (text/csv e application/pdf). Se este header
+// for enviado aqui, o PHP ignora os headers posteriores do controller
+// e o browser recebe JSON em vez do ficheiro binário.
+//
+// Cada controller JSON chama Response::json() que define o Content-Type
+// correcto por si próprio. Nada a fazer aqui.
 
 // Extrai método e caminho
 $method = $_SERVER['REQUEST_METHOD'];

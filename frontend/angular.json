@@ -6,9 +6,16 @@
     "weather-app": {
       "projectType": "application",
       "schematics": {
-        "@schematics/angular:component": { "style": "css", "standalone": true },
-        "@schematics/angular:directive": { "standalone": true },
-        "@schematics/angular:pipe":      { "standalone": true }
+        "@schematics/angular:component": {
+          "style": "css",
+          "standalone": true
+        },
+        "@schematics/angular:directive": {
+          "standalone": true
+        },
+        "@schematics/angular:pipe": {
+          "standalone": true
+        }
       },
       "root": "",
       "sourceRoot": "src",
@@ -20,24 +27,52 @@
             "outputPath": "dist/weather-app",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
+            "polyfills": [
+              "zone.js"
+            ],
             "tsConfig": "tsconfig.app.json",
             "assets": [
-              { "glob": "**/*", "input": "src/assets",     "output": "assets" },
-              { "glob": "**/*", "input": "src/i18n",       "output": "assets/i18n" }
+              {
+                "glob": "**/*",
+                "input": "src/assets",
+                "output": "assets"
+              },
+              {
+                "glob": "**/*",
+                "input": "src/i18n",
+                "output": "assets/i18n"
+              },
+              {
+                "glob": "favicon.png",
+                "input": "src",
+                "output": "/"
+              }
             ],
-            "styles": ["src/styles/styles.css"],
+            "styles": [
+              "src/styles/styles.css"
+            ],
             "scripts": []
           },
           "configurations": {
             "production": {
               "budgets": [
-                { "type": "initial", "maximumWarning": "500kB", "maximumError": "1MB" },
-                { "type": "anyComponentStyle", "maximumWarning": "2kB", "maximumError": "4kB" }
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "2kB",
+                  "maximumError": "4kB"
+                }
               ],
               "outputHashing": "all",
               "fileReplacements": [
-                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.prod.ts" }
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
               ]
             },
             "development": {
@@ -51,8 +86,12 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
-            "production":  { "buildTarget": "weather-app:build:production" },
-            "development": { "buildTarget": "weather-app:build:development" }
+            "production": {
+              "buildTarget": "weather-app:build:production"
+            },
+            "development": {
+              "buildTarget": "weather-app:build:development"
+            }
           },
           "defaultConfiguration": "development",
           "options": {

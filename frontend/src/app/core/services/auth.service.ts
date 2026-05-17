@@ -21,12 +21,21 @@ export class AuthService {
 
   register(name: string, email: string, password: string): Observable<ApiResponse<AuthResponse>> {
     return this.http.post<ApiResponse<AuthResponse>>(`${this.apiUrl}/auth/register`, { name, email, password })
-      .pipe(tap(res => { if (res.success) this.saveSession(res.data); }));
+      .pipe(tap(res => {
+        if (res.success) {
+          this.router.navigate(['/login']);
+        }
+      }));
   }
 
   login(email: string, password: string): Observable<ApiResponse<AuthResponse>> {
     return this.http.post<ApiResponse<AuthResponse>>(`${this.apiUrl}/auth/login`, { email, password })
-      .pipe(tap(res => { if (res.success) this.saveSession(res.data); }));
+      .pipe(tap(res => {
+        if (res.success) {
+          this.saveSession(res.data);
+          this.router.navigate(['/dashboard']);
+        }
+      }));
   }
 
   logout(): void {

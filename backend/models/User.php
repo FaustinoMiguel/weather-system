@@ -26,6 +26,12 @@ class User {
         return (int)$this->db->lastInsertId();
     }
 
+    public function findByIdWithPassword(int $id): ?array {
+        $stmt = $this->db->prepare('SELECT id, password FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        return $stmt->fetch() ?: null;
+    }
+
     public function verifyPassword(string $password, string $hash): bool {
         return password_verify($password, $hash);
     }

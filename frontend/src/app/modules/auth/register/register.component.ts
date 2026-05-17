@@ -14,7 +14,8 @@ import { I18nService } from '../../../core/services/i18n.service';
         <div class="auth-logo">🌤</div>
         <h1>{{ i18n.t('auth.register') }}</h1>
 
-        @if (error()) { <div class="alert-error">{{ error() }}</div> }
+        @if (error())   { <div class="alert-error">⚠️ {{ error() }}</div> }
+        @if (success()) { <div class="alert-success">✅ {{ success() }}</div> }
 
         <form (ngSubmit)="submit()">
           <div class="form-group">
@@ -38,8 +39,9 @@ import { I18nService } from '../../../core/services/i18n.service';
                    [placeholder]="i18n.t('auth.confirmPasswordPlaceholder')" />
           </div>
 
-          <button type="submit" class="btn-primary" [disabled]="loading()">
-            @if (loading()) { ⏳ } @else { {{ i18n.t('auth.registerBtn') }} }
+          <button type="submit" class="btn-primary" [disabled]="loading() || !!success()">
+            @if (loading()) { <span class="btn-loading">⏳ A criar conta…</span> }
+            @else { 🚀 Criar conta }
           </button>
         </form>
 
@@ -61,9 +63,11 @@ export class RegisterComponent {
   confirmPassword = '';
   loading         = signal(false);
   error           = signal('');
+  success         = signal('');
 
   submit(): void {
     this.error.set('');
+    this.success.set('');
     if (this.password !== this.confirmPassword) {
       this.error.set(this.i18n.t('auth.passwordMismatch'));
       return;
@@ -74,7 +78,10 @@ export class RegisterComponent {
     }
     this.loading.set(true);
     this.auth.register(this.name, this.email, this.password).subscribe({
-      next:  () => this.loading.set(false),
+      next: () => {
+        this.loading.set(false);
+        this.success.set('Conta criada com sucesso! A redirecionar para o login…');
+      },
       error: (err) => {
         this.loading.set(false);
         this.error.set(err.error?.message ?? this.i18n.t('auth.registerError'));

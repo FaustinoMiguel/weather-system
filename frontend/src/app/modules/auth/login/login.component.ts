@@ -16,7 +16,7 @@ import { LoadingSpinnerComponent } from '../../../shared/components/loading-spin
         <h1>{{ i18n.t('auth.login') }}</h1>
 
         @if (error()) {
-          <div class="alert-error">{{ error() }}</div>
+          <div class="alert-error">⚠️ {{ error() }}</div>
         }
 
         <form (ngSubmit)="submit()">
@@ -32,7 +32,7 @@ import { LoadingSpinnerComponent } from '../../../shared/components/loading-spin
           </div>
 
           <button type="submit" class="btn-primary" [disabled]="loading()">
-            @if (loading()) { ⏳ } @else { {{ i18n.t('auth.loginBtn') }} }
+            @if (loading()) { ⏳ A entrar… } @else { {{ i18n.t('auth.loginBtn') }} }
           </button>
         </form>
 

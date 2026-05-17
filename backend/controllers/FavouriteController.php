@@ -15,10 +15,11 @@ class FavouriteController {
         $lat         = (float)($body['latitude']  ?? 0);
         $lon         = (float)($body['longitude'] ?? 0);
 
-        if (!$cityName || !$countryCode) {
-            Response::error('city_name e country_code são obrigatórios.');
+        if (!$cityName) {
+            Response::error('city_name é obrigatório.');
         }
 
+        // country_code pode vir vazio (WeatherAPI não devolve ISO code em alguns endpoints)
         $model  = new FavouriteCity();
         $result = $model->add((int)$payload['user_id'], $cityName, $countryCode, $lat, $lon);
         Response::created($result, 'Cidade adicionada aos favoritos.');

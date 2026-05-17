@@ -1,0 +1,3 @@
+"C:\xampp\php\php.exe" -S localhost:8000 -t "C:\Users\Arlindo Miguel\Pictures\Nova pasta\ES\proj\backend"
+cd C:\Users\Arlindo Miguel\Pictures\Nova pasta\ES\proj\frontend
+npm start

@@ -22,6 +22,7 @@ function matchRoute(string $method, string $path): void {
         // Tempo
         ['GET',    '/weather/search',       [$weatherCtrl,   'search']],
         ['GET',    '/weather/forecast',     [$weatherCtrl,   'forecast']],
+        ['GET',    '/weather/suggest',    [$weatherCtrl,   'suggest']],
         ['GET',    '/weather/forecast/coords', [$weatherCtrl,   'forecastByCoords']],
         ['GET',    '/weather/coords',       [$weatherCtrl,   'searchByCoords']],
         ['GET',    '/weather/compare',      [$weatherCtrl,   'compare']],

@@ -1,7 +1,8 @@
 import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
+import { RouterLink, ActivatedRoute } from '@angular/router';
+import { Subject, takeUntil, debounceTime, distinctUntilChanged, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { WeatherService } from '../../../core/services/weather.service';
 import { ExportService } from '../../../core/services/export.service';
@@ -9,11 +10,20 @@ import { I18nService } from '../../../core/services/i18n.service';
 import { WeatherData, ForecastDay, FavouriteCity, SearchHistoryItem } from '../../../core/services/api.types';
 import { TemperaturePipe } from '../../../shared/pipes/temperature.pipe';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
+import { translateCountry } from '../../../core/services/country-names';
 import { environment } from '../../../../environments/environment';
 
 interface Suggestion {
   name: string; country: string; country_code: string;
   admin1: string; latitude: number; longitude: number; timezone: string;
+}
+
+interface FavWithWeather extends FavouriteCity {
+  temperature?: number;
+  condition?: string;
+  condition_code?: number;
+  is_day?: boolean;
+  loadingWeather?: boolean;
 }
 
 @Component({
@@ -27,7 +37,13 @@ interface Suggestion {
       <header class="dash-header">
         <div class="dash-greeting">
           <h1>{{ greeting() }}, {{ userName() }}</h1>
-          <p>{{ i18n.t('dashboard.headerSub') }}</p>
+          <p>
+            @if (weather()) {
+              📍 {{ weather()!.city }}, {{ weather()!.country }}
+            } @else {
+              {{ i18n.t('dashboard.headerSub') }}
+            }
+          </p>
         </div>
         <div class="dash-controls">
           <!-- Search with suggestions -->
@@ -61,13 +77,7 @@ interface Suggestion {
             }
           </div>
 
-          <!-- Notificações -->
-          <button class="icon-btn" [title]="i18n.t('nav.notifications') || 'Notificações'">
-            🔔
-            @if (weather()?.is_extreme) {
-              <span class="notif-dot"></span>
-            }
-          </button>
+
         </div>
       </header>
 
@@ -77,6 +87,13 @@ interface Suggestion {
       }
       @if (gpsError()) {
         <div class="alert-error" style="margin-bottom:1rem;border-radius:var(--radius)">📍 {{ gpsError() }}</div>
+      }
+      <!-- Toast de favoritos -->
+      @if (favMsg()) {
+        <div [class]="favMsgType() === 'success' ? 'alert-success' : 'alert-error'"
+             style="margin-bottom:1rem;border-radius:var(--radius);animation:fadeIn .25s ease">
+          {{ favMsg() }}
+        </div>
       }
 
       <!-- Grid principal -->
@@ -112,7 +129,7 @@ interface Suggestion {
                     <p class="cw-feels">{{ i18n.t('weather.feelsLike') }} {{ weather()!.feels_like | temperature }}</p>
                     <p class="cw-cond-label">{{ weather()!.condition }}</p>
                   </div>
-                  <div class="cw-icon">{{ getIcon(weather()!.condition_code, weather()!.is_day) }}</div>
+                  <div class="cw-icon">{{ getIcon(weather()!.icon, weather()!.is_day, weather()!.temperature, weather()!.precipitation) }}</div>
                 </div>
 
                 <div class="cw-metrics">
@@ -176,7 +193,7 @@ interface Suggestion {
                   @for (day of forecast(); track day.date; let i = $index) {
                     <div class="wday-card" [class.today]="i === 0">
                       <span class="wday-name">{{ formatDay(day.date) }}</span>
-                      <span class="wday-icon">{{ getIcon(day.condition_code, true) }}</span>
+                      <span class="wday-icon">{{ getIcon(day.icon, true, (day.temp_max + day.temp_min) / 2, day.precipitation, day.precip_chance) }}</span>
                       <span class="wday-hi">{{ day.temp_max | temperature:'':0 }}</span>
                       <span class="wday-lo">{{ day.temp_min | temperature:'':0 }}</span>
                     </div>
@@ -196,7 +213,7 @@ interface Suggestion {
                 @for (h of hourly(); track h.time; let i = $index) {
                   <div class="hourly-item" [class.now]="i === 0">
                     <span class="hourly-time">{{ i === 0 ? i18n.t('dashboard.now') : h.time }}</span>
-                    <span class="hourly-icon">{{ getIcon(h.code, h.is_day) }}</span>
+                    <span class="hourly-icon">{{ getIcon(h.icon, h.is_day, h.temp, 0) }}</span>
                     <span class="hourly-temp">{{ h.temp | temperature:'':0 }}°</span>
                   </div>
                 }
@@ -347,8 +364,14 @@ interface Suggestion {
                     </div>
                   </div>
                   <div>
-                    <div class="city-temp">--°</div>
-                    <div class="city-cond">{{ i18n.t('favourites.tap') }}</div>
+                    @if (fav.loadingWeather) {
+                      <div class="city-temp" style="font-size:.75rem;opacity:.5">…</div>
+                    } @else if (fav.temperature !== undefined) {
+                      <div class="city-temp">{{ fav.temperature | temperature:'':0 }}°</div>
+                      <div class="city-cond">{{ fav.condition }}</div>
+                    } @else {
+                      <div class="city-temp" style="font-size:.75rem;opacity:.5">—</div>
+                    }
                   </div>
                 </div>
               }
@@ -427,6 +450,7 @@ interface Suggestion {
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   ws    = inject(WeatherService);
+  route = inject(ActivatedRoute);
   exportService = inject(ExportService);
   i18n  = inject(I18nService);
   http  = inject(HttpClient);
@@ -436,13 +460,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   suggestions = signal<Suggestion[]>([]);
   weather     = signal<WeatherData | null>(null);
   forecast    = signal<ForecastDay[]>([]);
-  favourites  = signal<FavouriteCity[]>([]);
+  favourites  = signal<FavWithWeather[]>([]);
   history     = signal<SearchHistoryItem[]>([]);
-  hourly      = signal<{time:string;temp:number;code:number;is_day:boolean}[]>([]);
+  hourly      = signal<{time:string;temp:number;code:number;icon:string;is_day:boolean}[]>([]);
   loading     = signal(false);
   gpsLoading  = signal(false);
   error       = signal('');
   gpsError    = signal('');
+  favMsg      = signal('');
+  favMsgType  = signal<'success'|'error'>('success');
   chartTab    = signal<'temp'|'rain'>('temp');
   private _searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
@@ -454,6 +480,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loadFavourites();
     this.loadHistory();
     this.loadGpsLocation();
+
+    // Le city via queryParam (ex: link do historico)
+    const city = this.route.snapshot.queryParamMap.get('city');
+    if (city) { this.loadCity(city); }
 
     // Debounce das sugestões de pesquisa
     this._searchSubject.pipe(
@@ -476,14 +506,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return 'Good evening';
   }
 
-  userName(): string { return this.favourites()[0]?.city_name ? (this.weather()?.city || '') : (this.weather()?.city || ''); }
+  userName(): string {
+    // Mostra o nome do utilizador autenticado (vem do JWT/localStorage)
+    const stored = localStorage.getItem('weather_user');
+    try { return JSON.parse(stored ?? '{}')?.name ?? ''; } catch { return ''; }
+  }
   today(): string { return new Date().toLocaleDateString(this.i18n.lang() === 'pt' ? 'pt-PT' : 'en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' }); }
   maxTemp(): number { return this.forecast()[0]?.temp_max ?? this.weather()?.temperature ?? 0; }
   minTemp(): number { return this.forecast()[0]?.temp_min ?? this.weather()?.temperature ?? 0; }
   isFav(): boolean {
     const w = this.weather();
     if (!w) return false;
-    return this.favourites().some(f => f.city_name === w.city && f.country_code === w.country_code);
+    // Compara apenas por city_name — country_code pode vir vazio da WeatherAPI
+    return this.favourites().some(f => f.city_name === w.city);
   }
   uvLabel(uv: number): string { if(uv<=2) return 'Baixo'; if(uv<=5) return 'Moderado'; if(uv<=7) return 'Alto'; return 'Muito alto'; }
   humidLabel(h: number): string { if(h<40) return 'Seco'; if(h<70) return 'Normal'; return 'Húmido'; }
@@ -538,10 +573,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   fetchSuggestions(q: string): void {
-    const params = new HttpParams().set('q', q).set('lang', this.i18n.lang());
+    const lang = this.i18n.lang();
+    const params = new HttpParams().set('q', q).set('lang', lang);
     this.http.get<{success:boolean;data:Suggestion[]}>(`${environment.apiUrl}/weather/suggest`, {params})
       .pipe(takeUntil(this.destroy$))
-      .subscribe({ next: r => this.suggestions.set(r.data ?? []), error: () => {} });
+      .subscribe({
+        next: r => {
+          const translated = (r.data ?? []).map(s => ({
+            ...s,
+            country: translateCountry(s.country, lang)
+          }));
+          this.suggestions.set(translated);
+        },
+        error: () => {}
+      });
   }
 
   selectSuggestion(s: Suggestion): void {
@@ -620,7 +665,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const frac = (t.getHours() - 6) / 14; // pico às 13h
       const temp = today.temp_min + Math.max(0, Math.sin(frac * Math.PI)) * (today.temp_max - today.temp_min);
       slots.push({ time: t.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
-        temp: Math.round(temp), code: today.condition_code,
+        temp: Math.round(temp), code: today.condition_code, icon: today.icon,
         is_day: t.getHours() >= 6 && t.getHours() < 20 });
     }
     this.hourly.set(slots);
@@ -628,28 +673,118 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   toggleFav(): void {
     const w = this.weather(); if (!w) return;
-    const ex = this.favourites().find(f=>f.city_name===w.city && f.country_code===w.country_code);
-    if (ex) this.ws.removeFavourite(ex.id).subscribe(()=>this.loadFavourites());
-    else this.ws.addFavourite(w).subscribe(()=>this.loadFavourites());
+    const ex = this.favourites().find(f => f.city_name === w.city);
+    if (ex) {
+      this.ws.removeFavourite(ex.id).subscribe({
+        next: () => { this.loadFavourites(); this.showFavMsg(`"${w.city}" removido dos favoritos.`, 'success'); },
+        error: () => this.showFavMsg('Erro ao remover favorito.', 'error')
+      });
+    } else {
+      this.ws.addFavourite(w).subscribe({
+        next: () => { this.loadFavourites(); this.showFavMsg(`"${w.city}" adicionado aos favoritos! 💛`, 'success'); },
+        error: () => this.showFavMsg('Erro ao adicionar favorito.', 'error')
+      });
+    }
+  }
+
+  private showFavMsg(msg: string, type: 'success'|'error'): void {
+    this.favMsg.set(msg);
+    this.favMsgType.set(type);
+    setTimeout(() => this.favMsg.set(''), 3500);
   }
 
   private loadFavourites(): void {
-    this.ws.getFavourites().pipe(takeUntil(this.destroy$)).subscribe({next:r=>this.favourites.set(r.data),error:()=>{}});
+    this.ws.getFavourites().pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res) => {
+        const list: FavWithWeather[] = (res.data ?? []).map(f => ({ ...f, loadingWeather: true }));
+        this.favourites.set(list);
+        // Busca temperatura de cada favorito em paralelo
+        list.forEach(city => {
+          const id = city.id;
+          this.ws.searchByCity(city.city_name, this.i18n.lang())
+            .pipe(takeUntil(this.destroy$), catchError(() => of(null)))
+            .subscribe(r => {
+              this.favourites.update(favs => favs.map(f => {
+                if (f.id !== id) return f;
+                if (!r?.data) return { ...f, loadingWeather: false };
+                return { ...f, loadingWeather: false, temperature: r.data.temperature,
+                         condition: r.data.condition, condition_code: r.data.condition_code,
+                         is_day: r.data.is_day };
+              }));
+            });
+        });
+      },
+      error: () => {}
+    });
   }
   private loadHistory(): void {
     this.ws.getHistory().pipe(takeUntil(this.destroy$)).subscribe({next:r=>this.history.set(r.data),error:()=>{}});
   }
 
-  getIcon(code: number, isDay: boolean): string {
-    if (code===0) return isDay?'☀️':'🌙';
-    if ([1,2].includes(code)) return isDay?'⛅':'🌤';
-    if (code===3) return '☁️';
-    if ([45,48].includes(code)) return '🌫️';
-    if (code>=51&&code<=67) return '🌧';
-    if (code>=71&&code<=77) return '❄️';
-    if (code>=80&&code<=82) return '🌧';
-    if (code>=95) return '⛈';
-    return '🌡';
+  /**
+   * Devolve o emoji correcto para uma condição meteorológica.
+   *
+   * @param icon        Categoria do ícone vinda do backend (ex: 'drizzle', 'rain').
+   * @param isDay       Se é dia ou noite.
+   * @param temp        Temperatura média (°C).
+   * @param precip      Precipitação acumulada (mm) — para escalar chuva.
+   * @param precipChance Probabilidade de chuva 0-100 % — evita ícones de chuva
+   *                    em dias com probabilidade baixa (previsão de 7 dias).
+   */
+  getIcon(icon: string, isDay: boolean, temp: number = 20, precip: number = 0, precipChance: number = 100): string {
+    if (temp >= 40)  return '🔥';
+    if (temp <= -15) return '🥶';
+
+    // Para dias de previsão: se o backend já fez o downgrade, chegamos aqui com
+    // icon='partly-cloudy' em vez de 'drizzle'. Mas caso o cliente tenha dados
+    // em cache com o ícone antigo, esta camada de segurança garante consistência.
+    // Três níveis de probabilidade de chuva
+    const noRain     = precipChance < 20;                        // < 20 %  → nublado
+    const maybeRain  = precipChance < 50 || precip < 1.5;       // 20-50 % → possibilidade
+    // precipChance >= 50 && precip >= 1.5                       // > 50 %  → confirmado
+
+    switch (icon) {
+      case 'clear':
+        if (!isDay) return temp <= 5 ? '🌃' : '🌕';
+        if (temp >= 35) return '🌞';
+        if (temp >= 25) return '☀️';
+        if (temp >= 15) return '🌤️';
+        return '🌥️';
+      case 'mainly-clear':
+        return isDay ? (temp >= 22 ? '⛅' : '🌤️') : '🌙';
+      case 'partly-cloudy':
+        return isDay ? '⛅' : '☁️';
+      case 'cloudy':
+        return '☁️';
+      case 'fog':
+        return '🌫️';
+      case 'drizzle':
+        // Se probabilidade de chuva < 40 % e acumulado < 1 mm, mostrar nuvens em vez de chuva
+        if (noRain)    return isDay ? '⛅' : '☁️';
+        if (maybeRain) return isDay ? '🌦️' : '☁️';  // garoa possível
+        return isDay ? '🌦' : '🌧';
+      case 'rain':
+        if (noRain)    return '⛅';
+        if (maybeRain) return isDay ? '🌦️' : '☁️';  // possibilidade
+        return precip > 15 ? '🌧' : '🌦';
+      case 'heavy-rain':
+        return '🌧';
+      case 'showers':
+        if (noRain)    return isDay ? '⛅' : '☁️';
+        if (maybeRain) return isDay ? '🌦️' : '☁️';
+        return isDay ? '🌦' : '🌧';
+      case 'snow':
+        return temp <= -5 ? '🌨️' : '❄️';
+      case 'heavy-snow':
+        return '🌨️';
+      case 'thunderstorm':
+        return '⛈';
+      default:
+        if (temp >= 28) return isDay ? '☀️' : '🌕';
+        if (temp >= 18) return isDay ? '⛅' : '🌙';
+        if (temp >= 8)  return '🌥️';
+        return '❄️';
+    }
   }
 
   ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }

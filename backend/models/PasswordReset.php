@@ -6,20 +6,26 @@ class PasswordReset {
         $this->db = Database::getConnection();
     }
 
+    /**
+     * Gera um token seguro de 64 caracteres hexadecimais e guarda na BD.
+     * Substitui qualquer token anterior do mesmo utilizador.
+     */
     public function create(int $userId): string {
-        // Remove tokens anteriores do utilizador
         $this->db->prepare('DELETE FROM password_resets WHERE user_id = ?')->execute([$userId]);
 
-        $token  = bin2hex(random_bytes(32));
-        $expiry = date('Y-m-d H:i:s', time() + 3600); // 1 hora
-        $stmt   = $this->db->prepare('INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)');
+        $token  = bin2hex(random_bytes(32));           // 64 hex chars — criptograficamente seguro
+        $expiry = date('Y-m-d H:i:s', time() + 3600); // expira em 1 hora
+        $stmt   = $this->db->prepare(
+            'INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)'
+        );
         $stmt->execute([$userId, $token, $expiry]);
         return $token;
     }
 
     public function findValid(string $token): ?array {
-        $stmt = $this->db->prepare(
-            'SELECT * FROM password_resets 
+        $token = trim($token);
+        $stmt  = $this->db->prepare(
+            'SELECT * FROM password_resets
              WHERE token = ? AND expires_at > NOW() AND used = 0 LIMIT 1'
         );
         $stmt->execute([$token]);

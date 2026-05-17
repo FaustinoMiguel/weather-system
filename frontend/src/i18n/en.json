@@ -94,5 +94,17 @@
   "dashboard.searchResult": "Search result",
   "dashboard.retryGps": "Try again",
   "dashboard.gpsPermissionDenied": "Location permission denied. You can search for a city manually.",
-  "dashboard.gpsApiError": "Could not get weather for your location."
+  "dashboard.gpsApiError": "Could not get weather for your location.",
+  "dashboard.headerSub": "Check the latest weather updates for your location",
+  "dashboard.searchPrompt": "Search a city or use GPS",
+  "dashboard.hourlyForecast": "Hourly Forecast",
+  "dashboard.weeklyOverview": "Weekly Overview",
+  "dashboard.temperature": "Temperature",
+  "dashboard.precipitation": "Precipitation",
+  "dashboard.todayHighlights": "Today's Highlights",
+  "dashboard.now": "Now",
+  "favourites.seeAll": "See all",
+  "favourites.tap": "Tap to view",
+  "nav.notifications": "Notifications",
+  "export.generating": "Generating…"
 }

@@ -43,6 +43,10 @@ export interface ForecastDay {
   temp_max: number;
   temp_min: number;
   precipitation: number;
+  /** Probability of rain 0-100 (%) — daily_chance_of_rain from WeatherAPI */
+  precip_chance: number;
+  /** Average humidity used as cloud-cover proxy for the day */
+  cloud_cover: number;
   wind_speed: number;
   uv_index_max: number;
   condition: string;

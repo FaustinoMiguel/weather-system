@@ -75,23 +75,23 @@ h1 {
 .form-group input {
   width: 100%;
   padding: .7rem 1rem;
-  background: var(--color-bg-secondary);
-  border: 1.5px solid var(--color-border);
+  background: var(--input-bg);
+  border: 2px solid var(--input-border);
   border-radius: var(--radius-md);
   font-size: .95rem;
-  color: var(--color-text-primary);
+  color: var(--input-text);
   box-sizing: border-box;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-glow);
+  border-color: var(--input-focus-border);
+  box-shadow: 0 0 0 3px var(--input-focus-shadow);
   background: var(--color-card);
 }
 
-.form-group input::placeholder { color: var(--color-text-muted); }
+.form-group input::placeholder { color: var(--input-placeholder); }
 
 .btn-primary {
   width: 100%; padding: .8rem;

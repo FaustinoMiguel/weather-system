@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS favourite_cities (
   longitude    DECIMAL(9,6),
   added_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  UNIQUE KEY uniq_user_city (user_id, city_name, country_code)
+  UNIQUE KEY uniq_user_city (user_id, city_name)
 );
 
 CREATE TABLE IF NOT EXISTS search_history (

@@ -27,7 +27,7 @@ import { I18nService } from '../../../core/services/i18n.service';
               <p class="country">{{ weather.country }}</p>
             </div>
             <div class="condition-visual">
-              <span class="weather-emoji">{{ getIcon(weather.condition_code, weather.is_day) }}</span>
+              <span class="weather-emoji">{{ getIcon(weather.icon, weather.is_day, weather.temperature, weather.precipitation) }}</span>
               <p class="condition-label">{{ weather.condition }}</p>
             </div>
           </div>
@@ -224,17 +224,45 @@ export class WeatherCardComponent {
     return `background: ${gradient}`;
   }
 
-  getIcon(code: number, isDay: boolean): string {
-    if (code === 0)              return isDay ? '☀️' : '🌙';
-    if ([1,2].includes(code))    return isDay ? '⛅' : '🌤';
-    if (code === 3)              return '☁️';
-    if ([45,48].includes(code))  return '🌫️';
-    if (code >= 51 && code <= 57) return '🌦';
-    if (code >= 61 && code <= 67) return '🌧';
-    if (code >= 71 && code <= 77) return '❄️';
-    if (code >= 80 && code <= 82) return '🌧';
-    if ([85,86].includes(code))  return '🌨';
-    if (code >= 95)              return '⛈';
-    return '🌡';
+  getIcon(icon: string, isDay: boolean, temp: number = 20, precip: number = 0, precipChance: number = 100): string {
+    if (temp >= 40)  return '🔥';
+    if (temp <= -15) return '🥶';
+    // Três níveis de probabilidade de chuva
+    const noRain     = precipChance < 20;                        // < 20 %  → nublado
+    const maybeRain  = precipChance < 50 || precip < 1.5;       // 20-50 % → possibilidade
+    // precipChance >= 50 && precip >= 1.5                       // > 50 %  → confirmado
+    switch (icon) {
+      case 'clear':
+        if (!isDay) return temp <= 5 ? '🌃' : '🌕';
+        if (temp >= 35) return '🌞';
+        if (temp >= 25) return '☀️';
+        if (temp >= 15) return '🌤️';
+        return '🌥️';
+      case 'mainly-clear':  return isDay ? (temp >= 22 ? '⛅' : '🌤️') : '🌙';
+      case 'partly-cloudy': return isDay ? '⛅' : '☁️';
+      case 'cloudy':        return '☁️';
+      case 'fog':           return '🌫️';
+      case 'drizzle':
+        if (noRain)    return isDay ? '⛅' : '☁️';
+        if (maybeRain) return isDay ? '🌦️' : '☁️';  // garoa possível
+        return isDay ? '🌦' : '🌧';
+      case 'rain':
+        if (noRain)    return '⛅';
+        if (maybeRain) return isDay ? '🌦️' : '☁️';  // possibilidade
+        return precip > 15 ? '🌧' : '🌦';
+      case 'heavy-rain':    return '🌧';
+      case 'showers':
+        if (noRain)    return isDay ? '⛅' : '☁️';
+        if (maybeRain) return isDay ? '🌦️' : '☁️';
+        return isDay ? '🌦' : '🌧';
+      case 'snow':          return temp <= -5 ? '🌨️' : '❄️';
+      case 'heavy-snow':    return '🌨️';
+      case 'thunderstorm':  return '⛈';
+      default:
+        if (temp >= 28) return isDay ? '☀️' : '🌕';
+        if (temp >= 18) return isDay ? '⛅' : '🌙';
+        if (temp >= 8)  return '🌥️';
+        return '❄️';
+    }
   }
 }
